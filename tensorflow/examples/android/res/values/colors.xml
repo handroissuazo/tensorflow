@@ -16,4 +16,5 @@
 -->
 <resources>
     <color name="control_background">#cc4285f4</color>
+    <color name="TranslucentGreen">#7c105e00</color>
 </resources>
