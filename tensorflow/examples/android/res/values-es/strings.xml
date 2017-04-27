@@ -15,4 +15,5 @@
     <string name="previous_classifications">Historia</string>
     <string name="capture_images">Tomar Fotos</string>
     <string name="developers">Desarrolladores</string>
+    <string name="instruction">Instrucciones \n     Como usar la aplicación.</string>
 </resources>
