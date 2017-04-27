@@ -10,18 +10,20 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.StringWriter;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.net.ssl.HttpsURLConnection;
+import java.net.HttpURLConnection;
 
 /**
  * Created by ovidio on 4/10/17.
@@ -95,21 +97,17 @@ public class NetworkFragment extends Fragment {
         String eastModel = getModelFileName("us_east", ".pb");
         String westModel = getModelFileName("us_west", ".pb");
 
-        String northTime = northModel.split("_")[2].split(".")[0];
-        String southTime = southModel.split("_")[2].split(".")[0];
-        String eastTime = eastModel.split("_")[2].split(".")[0];
-        String westTime = westModel.split("_")[2].split(".")[0];
+        String northTime = northModel.replaceAll("\\D+", "");
+        String southTime = southModel.replaceAll("\\D+", "");
+        String eastTime = eastModel.replaceAll("\\D+", "");
+        String westTime = westModel.replaceAll("\\D+", "");
 
         // Create urls
-        String[] urls = new String[8];
+        String[] urls = new String[4];
         urls[0] = mUrlString + "/update-model?model-key=ModelPathNorth&model-time=" + northTime;
         urls[1] = mUrlString + "/update-model?model-key=ModelPathSouth&model-time=" + southTime;
         urls[2] = mUrlString + "/update-model?model-key=ModelPathEast&model-time=" + eastTime;
         urls[3] = mUrlString + "/update-model?model-key=ModelPathWest&model-time=" + westTime;
-        urls[4] = mUrlString + "/update-label?model-key=ModelPathNorth&model-time=" + northTime;
-        urls[5] = mUrlString + "/update-label?model-key=ModelPathSouth&model-time=" + southTime;
-        urls[6] = mUrlString + "/update-label?model-key=ModelPathEast&model-time=" + eastTime;
-        urls[7] = mUrlString + "/update-label?model-key=ModelPathWest&model-time=" + westTime;
         mDownloadTask.execute(urls);
     }
 
@@ -144,10 +142,11 @@ public class NetworkFragment extends Fragment {
          */
         class Result {
             public boolean mResultValue;
-            public ArrayList<String> failedDownloads;
+            public Exception mException;
             public Result(boolean resultValue) {
                 mResultValue = resultValue;
             }
+            public Result(Exception exception) { mException = exception; }
         }
 
         /**
@@ -179,18 +178,14 @@ public class NetworkFragment extends Fragment {
                 for (int i = 0; i < count; i++) {
                     try {
                         URL url = new URL(urls[i]);
-                        boolean success = downloadUrl(url);
+                        boolean updateAvailable = downloadUrl(url);
 
-                        if (!result.mResultValue) {
-                            result.mResultValue = success;
+                        if (updateAvailable) {
+                            result.mResultValue = updateAvailable;
+                            return result;
                         }
-
-                        if (!success) {
-                            result.failedDownloads.add(urls[i]);
-                        }
-                    }
-                    catch (Exception e) {
-                        Log.e("doInBackground", e.getMessage());
+                    } catch (Exception e) {
+                        result.mException = e;
                     }
                 }
             }
@@ -203,8 +198,8 @@ public class NetworkFragment extends Fragment {
         @Override
         protected void onPostExecute(Result result) {
             if (result != null && mCallback != null) {
-                for (int i = 0; i < result.failedDownloads.size(); ++i) {
-                    Log.i("onPostExecute", "failed url:" + result.failedDownloads.get(i));
+                if (result.mException != null) {
+                    mCallback.updateFromDownload(result.mException.getMessage());
                 }
 
                 mCallback.updateFromDownload(Boolean.toString(result.mResultValue));
@@ -227,10 +222,10 @@ public class NetworkFragment extends Fragment {
          */
         private boolean downloadUrl(URL url) throws IOException {
             InputStream stream = null;
-            HttpsURLConnection connection = null;
-            boolean success = false;
+            HttpURLConnection connection = null;
+            boolean updateAvailable = false;
             try {
-                connection = (HttpsURLConnection) url.openConnection();
+                connection = (HttpURLConnection) url.openConnection();
                 // Timeout for reading InputStream arbitrarily set to 3000ms.
                 connection.setReadTimeout(3000);
                 // Timeout for connection.connect() arbitrarily set to 3000ms.
@@ -244,19 +239,22 @@ public class NetworkFragment extends Fragment {
                 connection.connect();
                 publishProgress(DownloadCallback.Progress.CONNECT_SUCCESS);
                 int responseCode = connection.getResponseCode();
-                if (responseCode != HttpsURLConnection.HTTP_OK) {
-                    return success;
+                if (responseCode != HttpURLConnection.HTTP_OK) {
+                    throw new IOException("HTTP error code: " + responseCode);
                 }
                 // Retrieve the response body as an InputStream.
                 stream = connection.getInputStream();
                 publishProgress(DownloadCallback.Progress.GET_INPUT_STREAM_SUCCESS, 0);
                 if (stream != null) {
-                    // Save to file
-                    String raw = connection.getHeaderField("Content-Disposition"); // raw = "attachment; filename=abc.jpg"
-                    if(raw != null && raw.indexOf("=") != -1) {
-                        String fileName = raw.split("=")[1]; //getting value after '='
-                        success = saveFile(stream, fileName, url);
+                    // Check if the stream says true or false
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
                     }
+
+                    updateAvailable = Boolean.valueOf(response.toString());
                 }
             } finally {
                 // Close Stream and disconnect HTTPS connection.
@@ -267,13 +265,13 @@ public class NetworkFragment extends Fragment {
                     connection.disconnect();
                 }
             }
-            return success;
+            return updateAvailable;
         }
 
         /*
          * Writes the stream to file
          */
-        private boolean saveFile(InputStream stream, String fileName, URL url) throws IOException {
+        /*private boolean saveFile(InputStream stream, String fileName, URL url) throws IOException {
             File targetFile = null;
 
             if (fileName == "retrained_labels.txt") {
@@ -357,7 +355,7 @@ public class NetworkFragment extends Fragment {
                         break;
                     default:
                         break;
-                }*/
+                }
 
 
             // Create file
@@ -369,7 +367,7 @@ public class NetworkFragment extends Fragment {
             outStream.write(buffer);
 
             return true;
-        }
+        }*/
     }
 
     public String getModelFileName(String path, String ext) {

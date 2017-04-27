@@ -219,11 +219,13 @@ def download_model():
 
                 # Serve model file if newer, else return False.
                 if newer:
-                    return send_from_directory(path, name, as_attachment=True)
+                    #return send_from_directory(path, name, as_attachment=True)
+                    return make_response("true", 200)
 		else:
-		    return make_response('no update available', 200)
+		    return make_response('false', 200)
     return make_response('error: model file not found', 404)
 
+'''
 @APP.route('/update-label')
 def download_label():
     """ Send the specified label to the client. """
@@ -256,6 +258,7 @@ def download_label():
         return make_response('no update available', 200)
 
     return make_response('error: model file not found', 404)
+'''
 
 def check_time(path, time):
     """ Check the metadata of the model file to see if there is a new

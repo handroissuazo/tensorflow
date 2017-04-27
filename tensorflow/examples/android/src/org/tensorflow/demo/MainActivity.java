@@ -25,7 +25,7 @@ import java.io.OutputStream;
 public class MainActivity extends AppCompatActivity implements DownloadCallback {
 
     // Reference to NetworkFragment that executes network operations.
-    private static String serverUrl = "http://10.202.158.142";
+    private static String serverUrl = "http://192.168.1.102";
     private NetworkFragment mNetworkFragment;
 
     // Flag that is set when a download is in progress to prevent overlapping downloads
@@ -199,7 +199,10 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback 
     @Override
     public void updateFromDownload(Object result) {
         // Update UI based on result from download
-        Log.d("Model update result", result.toString());
+        // result.toString() contains whether there is an update or not.
+        // true means that there is an update
+        // false means that there is not an update
+        Log.d("updateFromDownload", "Model Update Available: " + result.toString());
     }
 
     @Override
