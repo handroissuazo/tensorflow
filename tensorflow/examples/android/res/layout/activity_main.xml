@@ -42,9 +42,10 @@
             android:background="@android:color/holo_purple"
             android:gravity="center"
             android:onClick="classify"
+            android:padding="5dp"
             android:text="@string/classify"
-            android:textAlignment="center"
-            android:textSize="24dp" />
+            android:textAllCaps="false"
+            android:textSize="20dp" />
 
         <Button
             android:id="@+id/capture_button"
@@ -54,8 +55,10 @@
             android:layout_weight="1"
             android:background="@android:color/darker_gray"
             android:onClick="capture"
+            android:padding="5dp"
             android:text="@string/capture_images"
             android:textSize="24dp" />
 
     </LinearLayout>
+
 </android.support.constraint.ConstraintLayout>

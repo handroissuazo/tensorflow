@@ -56,7 +56,10 @@
         android:layout_alignTop="@+id/cameraFloatingActionButton"
         android:layout_marginEnd="26dp"
         android:background="@android:color/holo_green_light"
-        android:text="Model Select"
-        android:textSize="12sp" />
+        android:text="Choose Your Region"
+        android:textSize="12sp" 
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true" />
+
 
 </RelativeLayout>
