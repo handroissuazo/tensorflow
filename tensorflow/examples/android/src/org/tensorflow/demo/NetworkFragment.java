@@ -17,6 +17,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -85,7 +88,29 @@ public class NetworkFragment extends Fragment {
     public void startDownload() {
         cancelDownload();
         mDownloadTask = new DownloadTask(mCallback);
-        mDownloadTask.execute(mUrlString);
+
+        // Grab epoch times from model files
+        String northModel = getModelFileName("us_north", ".pb");
+        String southModel = getModelFileName("us_south", ".pb");
+        String eastModel = getModelFileName("us_east", ".pb");
+        String westModel = getModelFileName("us_west", ".pb");
+
+        String northTime = northModel.split("_")[2].split(".")[0];
+        String southTime = southModel.split("_")[2].split(".")[0];
+        String eastTime = eastModel.split("_")[2].split(".")[0];
+        String westTime = westModel.split("_")[2].split(".")[0];
+
+        // Create urls
+        String[] urls = new String[8];
+        urls[0] = mUrlString + "/update-model?model-key=ModelPathNorth&model-time=" + northTime;
+        urls[1] = mUrlString + "/update-model?model-key=ModelPathSouth&model-time=" + southTime;
+        urls[2] = mUrlString + "/update-model?model-key=ModelPathEast&model-time=" + eastTime;
+        urls[3] = mUrlString + "/update-model?model-key=ModelPathWest&model-time=" + westTime;
+        urls[4] = mUrlString + "/update-label?model-key=ModelPathNorth&model-time=" + northTime;
+        urls[5] = mUrlString + "/update-label?model-key=ModelPathSouth&model-time=" + southTime;
+        urls[6] = mUrlString + "/update-label?model-key=ModelPathEast&model-time=" + eastTime;
+        urls[7] = mUrlString + "/update-label?model-key=ModelPathWest&model-time=" + westTime;
+        mDownloadTask.execute(urls);
     }
 
     /**
@@ -119,12 +144,9 @@ public class NetworkFragment extends Fragment {
          */
         class Result {
             public boolean mResultValue;
-            public Exception mException;
+            public ArrayList<String> failedDownloads;
             public Result(boolean resultValue) {
                 mResultValue = resultValue;
-            }
-            public Result(Exception exception) {
-                mException = exception;
             }
         }
 
@@ -150,14 +172,26 @@ public class NetworkFragment extends Fragment {
          */
         @Override
         protected DownloadTask.Result doInBackground(String... urls) {
-            Result result = null;
+            Result result = new Result(false);
             if (!isCancelled() && urls != null && urls.length > 0) {
-                String urlString = urls[0];
-                try {
-                    URL url = new URL(urlString);
-                    result = new Result(downloadUrl(url));
-                } catch(Exception e) {
-                    result = new Result(e);
+                int count = urls.length;
+
+                for (int i = 0; i < count; i++) {
+                    try {
+                        URL url = new URL(urls[i]);
+                        boolean success = downloadUrl(url);
+
+                        if (!result.mResultValue) {
+                            result.mResultValue = success;
+                        }
+
+                        if (!success) {
+                            result.failedDownloads.add(urls[i]);
+                        }
+                    }
+                    catch (Exception e) {
+                        Log.e("doInBackground", e.getMessage());
+                    }
                 }
             }
             return result;
@@ -169,9 +203,10 @@ public class NetworkFragment extends Fragment {
         @Override
         protected void onPostExecute(Result result) {
             if (result != null && mCallback != null) {
-                if (result.mException != null) {
-                    mCallback.updateFromDownload(result.mException.getMessage());
+                for (int i = 0; i < result.failedDownloads.size(); ++i) {
+                    Log.i("onPostExecute", "failed url:" + result.failedDownloads.get(i));
                 }
+
                 mCallback.updateFromDownload(Boolean.toString(result.mResultValue));
                 mCallback.finishDownloading();
             }
@@ -210,16 +245,18 @@ public class NetworkFragment extends Fragment {
                 publishProgress(DownloadCallback.Progress.CONNECT_SUCCESS);
                 int responseCode = connection.getResponseCode();
                 if (responseCode != HttpsURLConnection.HTTP_OK) {
-                    throw new IOException("HTTP error code: " + responseCode);
+                    return success;
                 }
                 // Retrieve the response body as an InputStream.
                 stream = connection.getInputStream();
                 publishProgress(DownloadCallback.Progress.GET_INPUT_STREAM_SUCCESS, 0);
                 if (stream != null) {
-                    // Converts Stream to String with max length of 500.
-                    // result = readStream(stream, 500);
                     // Save to file
-                    success = saveFile(stream);
+                    String raw = connection.getHeaderField("Content-Disposition"); // raw = "attachment; filename=abc.jpg"
+                    if(raw != null && raw.indexOf("=") != -1) {
+                        String fileName = raw.split("=")[1]; //getting value after '='
+                        success = saveFile(stream, fileName, url);
+                    }
                 }
             } finally {
                 // Close Stream and disconnect HTTPS connection.
@@ -233,40 +270,98 @@ public class NetworkFragment extends Fragment {
             return success;
         }
 
-        /**
-         * Converts the contents of an InputStream to a String.
-         */
-        private String readStream(InputStream stream, int maxLength) throws IOException {
-            String result = null;
-            // Read InputStream using the UTF-8 charset.
-            InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
-            // Create temporary buffer to hold Stream data with specified max length.
-            char[] buffer = new char[maxLength];
-            // Populate temporary buffer with Stream data.
-            int numChars = 0;
-            int readSize = 0;
-            while (numChars < maxLength && readSize != -1) {
-                numChars += readSize;
-                int pct = (100 * numChars) / maxLength;
-                publishProgress(DownloadCallback.Progress.PROCESS_INPUT_STREAM_IN_PROGRESS, pct);
-                readSize = reader.read(buffer, numChars, buffer.length - numChars);
-            }
-            if (numChars != -1) {
-                // The stream was not empty.
-                // Create String that is actual length of response body if actual length was less than
-                // max length.
-                numChars = Math.min(numChars, maxLength);
-                result = new String(buffer, 0, numChars);
-            }
-            return result;
-        }
-
         /*
          * Writes the stream to file
          */
-        private boolean saveFile(InputStream stream) throws IOException {
+        private boolean saveFile(InputStream stream, String fileName, URL url) throws IOException {
+            File targetFile = null;
+
+            if (fileName == "retrained_labels.txt") {
+                // Parse URL
+                String query = url.getQuery();
+                String[] params = query.split("&");
+                Map<String, String> map = new HashMap<String, String>();
+                for (String param : params)
+                {
+                    String name = param.split("=")[0];
+                    String value = param.split("=")[1];
+                    map.put(name, value);
+                }
+
+                if (url.getPath().contains("label")) {
+                    String modelKey = map.get("model-key");
+                    switch (modelKey) {
+                        case "ModelPathNorth":
+                            targetFile = new File("file:///android_asset/us_north/retrained_labels.txt");
+                            break;
+                        case "ModelPathSouth":
+                            targetFile = new File("file:///android_asset/us_south/retrained_labels.txt");
+                            break;
+                        case "ModelPathEast":
+                            targetFile = new File("file:///android_asset/us_east/retrained_labels.txt");
+                            break;
+                        case "ModelPathWest":
+                            targetFile = new File("file:///android_asset/us_west/retrained_labels.txt");
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            } else {
+                // Split file name into components
+                String[] fileComp = fileName.split("_");
+                String[] fileComp2 = fileComp[2].split(".");
+                String region = fileComp[0] + "_" + fileComp[1];
+                String time = fileComp2[0];
+                String extension = fileComp2[1];
+
+                switch (region) {
+                    case "us_north":
+                        if (extension == "pb") {
+                            //String model = getModelFileName("us_north", ".pb");
+                            targetFile = new File("file:///android_asset/us_north/us_north_" + time + ".pb");
+                        }
+                        break;
+                    case "us_south":
+                        if (extension == "pb") {
+                            targetFile = new File("file:///android_asset/us_south/us_south_" + time + ".pb");
+                        }
+                        break;
+                    case "us_east":
+                        if (extension == "pb") {
+                            targetFile = new File("file:///android_asset/us_east/us_east_" + time + ".pb");
+                        }
+                        break;
+                    case "us_west":
+                        if (extension == "pb") {
+                            targetFile = new File("file:///android_asset/us_west/us_west_" + time + ".pb");
+                        }
+                        break;
+                    default:
+
+                        break;
+                }
+            }
+
+            /*if (url.getPath().contains("model")) {
+                String modelKey = map.get("model-key");
+                switch (modelKey) {
+                    case "ModelPathNorth":
+                        targetFile = new File("file:///android_asset/us_north/us_north_.pb");
+                        break;
+                    case "ModelPathSouth":
+                        break;
+                    case "ModelPathEast":
+                        break;
+                    case "ModelPathWest":
+                        break;
+                    default:
+                        break;
+                }*/
+
+
             // Create file
-            File targetFile = new File("file:///android_asset/model1/stripped_graph.pb");
+
             OutputStream outStream = new FileOutputStream(targetFile);
 
             // Write to file
@@ -275,5 +370,26 @@ public class NetworkFragment extends Fragment {
 
             return true;
         }
+    }
+
+    public String getModelFileName(String path, String ext) {
+        String [] list;
+        try {
+            list = getActivity().getAssets().list(path);
+            if (list.length > 0) {
+                for (String file : list)
+                {
+                    if (file.endsWith(ext))
+                    {
+                        return "file:///android_asset/" + path + "/" + file;
+                    }
+                }
+            }
+        }
+        catch (IOException e) {
+            return "";
+        }
+
+        return "";
     }
 }
