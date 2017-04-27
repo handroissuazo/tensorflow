@@ -1,11 +1,14 @@
 package org.tensorflow.demo;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Environment;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AppCompatActivity;
@@ -15,6 +18,10 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.PopupMenu;
+import android.widget.RelativeLayout;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -25,13 +32,14 @@ import java.io.OutputStream;
 public class MainActivity extends AppCompatActivity implements DownloadCallback {
 
     // Reference to NetworkFragment that executes network operations.
-    private static String serverUrl = "http://192.168.1.102";
+    private static String serverUrl = "http://192.168.1.149:8181";
     private NetworkFragment mNetworkFragment;
 
     // Flag that is set when a download is in progress to prevent overlapping downloads
     // triggered by consecutive calls.
     private boolean mDownloading = false;
 
+    private boolean mMessageShowing = false;
 
     String internalPath = Environment.getExternalStorageDirectory() + "/eLeaf";  // Your application path
 
@@ -39,8 +47,8 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        copyAssets();
+        configureUpdateButton();
+        //copyAssets();
         mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverUrl);
     }
 
@@ -51,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback 
     }
 
     private void copyAssets()
-    {
+    {   // Due to tensorflow limitations we cannot utilize this code fragment and related code fragments.
         File fileExtracted = new File(internalPath + "/extracted.txt");
         if (!fileExtracted.exists())
         {
@@ -167,6 +175,87 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback 
         }
     }
 
+    private void configureUpdateButton()
+    {
+        final Context mContext = getApplicationContext();
+
+        final FloatingActionButton modelSelect = (FloatingActionButton) findViewById(R.id.floatingActionButtonUpdate);
+
+        modelSelect.setOnClickListener(new View.OnClickListener()
+        {
+           @Override
+           public void onClick(View view) {
+            /*
+            public PopupMenu (Context context, View anchor)
+            Constructor to create a new popup menu with an anchor view.
+
+            Parameters
+            context : Context the popup menu is running in, through which it can access
+              the current theme, resources, etc.
+            anchor : Anchor view for this popup. The popup will appear below the anchor
+             if there is room, or above it if there is not.
+            */
+               // Initialize a new instance of popup menu
+               PopupMenu popupMenu = new PopupMenu(mContext,modelSelect);
+
+                /*
+                public MenuInflater getMenuInflater ()
+
+                Returns
+                a MenuInflater that can be used to inflate menu items from XML into
+                the menu returned by getMenu().
+                */
+                /*
+                public void inflate (int menuRes)
+                Inflate a menu resource into this PopupMenu. This is equivalent to calling
+                popupMenu.getMenuInflater().inflate(menuRes, popupMenu.getMenu()).
+
+                Parameters
+                menuRes : Menu resource to inflate
+                */
+               // Inflate the popup menu
+               popupMenu.getMenuInflater().inflate(R.menu.check_for_updates,popupMenu.getMenu());
+
+                /*
+                public void setOnMenuItemClickListener (PopupMenu.OnMenuItemClickListener listener)
+                Set a listener that will be notified when the user selects an item from the menu.
+
+                Parameters
+                listener : Listener to notify
+                */
+                /*
+                public abstract boolean onMenuItemClick (MenuItem item)
+                This method will be invoked when a menu item is clicked if the item itself
+                did not already handle the event.
+
+                Parameters
+                item : MenuItem that was clicked
+                Returns
+                true : if the event was handled, false otherwise.
+                */
+                // Set a click listener for menu item click
+                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        switch(menuItem.getItemId()){
+                            case R.id.one:
+                                Intent browse = new Intent( Intent.ACTION_VIEW , Uri.parse( "http://192.168.2.84:22334/job/eLeaf-build/") );
+                                startActivity( browse );
+                                return true;
+                            default:
+                                return false;
+                        }
+                    }
+                });
+
+            // Finally, show the popup menu
+            popupMenu.show();
+            }
+            }
+        );
+    }
+
+
     /*
      * Check if the server has a new update model update available and download it.
      */
@@ -204,6 +293,21 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback 
         // true means that there is an update
         // false means that there is not an update
         Log.d("updateFromDownload", "Model Update Available: " + result.toString());
+
+        if ("true" == result.toString())
+        {
+            showUpdateMessage();
+        }
+    }
+
+    public void showUpdateMessage()
+    {
+        if (!mMessageShowing)
+        {
+            View b = findViewById(R.id.floatingActionButtonUpdate);
+            b.setVisibility(View.VISIBLE);
+            mMessageShowing = true;
+        }
     }
 
     @Override

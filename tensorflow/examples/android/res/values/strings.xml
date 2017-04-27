@@ -17,7 +17,7 @@
     <string name="description_info">Info</string>
     <string name="request_permission">This sample needs camera permission.</string>
     <string name="camera_error">This device doesn\'t support Camera2 API.</string>
-    <string name="update_model">Update model</string>
+    <string name="update_model">Check For Updates</string>
     <string name="about">About</string>
     <string name="instruction">INSTRUCTIONS \n     How to use the eLeaf app.</string>
     <string name="classify">  CLASSIFY \n     Take a picture to classify</string>

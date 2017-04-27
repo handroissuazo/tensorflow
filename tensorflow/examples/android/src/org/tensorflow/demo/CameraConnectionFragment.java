@@ -811,16 +811,17 @@ public class CameraConnectionFragment extends Fragment {
        }
     );
   }
-    private void configureTouchFocus()
-    {
-        textureView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent)
-            {
-                return focusInOnTouch(view, motionEvent);
-            }
-        });
-    }
+
+  private void configureTouchFocus()
+  {
+      textureView.setOnTouchListener(new View.OnTouchListener() {
+          @Override
+          public boolean onTouch(View view, MotionEvent motionEvent)
+          {
+              return focusInOnTouch(view, motionEvent);
+          }
+      });
+  }
 
   /**
    * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
