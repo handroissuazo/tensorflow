@@ -21,3 +21,4 @@ WORKSPACE
 tensorflow/examples/android/local.properties
 static/uploads/*
 test.py
+*.orig
