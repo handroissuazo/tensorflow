@@ -200,7 +200,10 @@ public class MainActivity extends AppCompatActivity implements DownloadCallback 
     @Override
     public void updateFromDownload(Object result) {
         // Update UI based on result from download
-        Log.d("Model update result", result.toString());
+        // result.toString() contains whether there is an update or not.
+        // true means that there is an update
+        // false means that there is not an update
+        Log.d("updateFromDownload", "Model Update Available: " + result.toString());
     }
 
     @Override

@@ -205,8 +205,8 @@ def download_model():
     # Check that URL arguments have been included.
     if 'model-key' not in request.args:
         return make_response('error: model-key argument missing from URL', 400)
-    #if 'model-time' not in request.args:
-    #    return make_response('error: model-time argument missing from URL', 400)
+    if 'model-time' not in request.args:
+        return make_response('error: model-time argument missing from URL', 400)
 
     key = request.args.get('model-key')
     time = request.args.get('model-time')
@@ -215,15 +215,17 @@ def download_model():
     for path, subdirs, files in os.walk(modelPath):
         for name in files:
             if name.endswith(DEFAULTS['ModelExtension']):
-                path = os.path.join(path, name)
-                newer = check_time(path, time)
+                newer = check_time(name, time)
 
                 # Serve model file if newer, else return False.
                 if newer:
-                    path, name = os.path.split(path)
-                    return send_from_directory(path, name)
+                    #return send_from_directory(path, name, as_attachment=True)
+                    return make_response("true", 200)
+		else:
+		    return make_response('false', 200)
     return make_response('error: model file not found', 404)
 
+'''
 @APP.route('/update-label')
 def download_label():
     """ Send the specified label to the client. """
@@ -236,17 +238,27 @@ def download_label():
     key = request.args.get('model-key')
     time = request.args.get('model-time')
     modelPath = DEFAULTS[key]
+    newer = False
+    labelPath = ''
+    labelName = ''
 
     for path, subdirs, files in os.walk(modelPath):
-        for name in files:
+	for name in files:
+	    if name.endswith(DEFAULTS['ModelExtension']):
+		newer = check_time(name, time)
             if name.endswith(DEFAULTS['LabelExtension']):
                 if 'bottlenecks' not in path:
-                    newer = check_time(name, time)
+		    labelPath = path
+		    labelName = name
 
-                    # Serve model file if newer, else return False.
-                    if newer:
-                        return send_from_directory(path, name, as_attachment=True)
+    # Serve model file if newer, else return False.
+    if newer:
+        return send_from_directory(labelPath, labelName, as_attachment=True)
+    else:
+        return make_response('no update available', 200)
+
     return make_response('error: model file not found', 404)
+'''
 
 def check_time(path, time):
     """ Check the metadata of the model file to see if there is a new
