@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}{{ super() }}{% endblock %}
+
+{% block header %}
+<h1 class="text-center">eLeaf User Manual</h1><br />
+<div class="row">
+  <div class="col-xs-12 col-md-4"></div>
+  <div class="col-xs-12 col-md-4">
+    <img src="/images/logo.png" class="img-responsive center-block" alt="eLeaf Logo">
+  </div>
+  <div class="col-xs-12 col-md-4"></div>
+</div>
+{% endblock %}
+
+{% block content %}
+<h2 class="text-center">Table of Contents</h2>
+
+<ol class="well">
+  <li><a href="#installation">Installation</a>
+    <ol>
+      <li><a href="#installation-requirements">Requirements</a></li>
+      <li><a href="#installation-dependencies">Dependencies</a></li>
+      <li>
+        <a href="#installation-android">Build Instructions for the eLeaf Android Application</a>
+        <ol>
+          <li><a href="#installation-android-bazel">Bazel Installation</a></li>
+          <li><a href="#installation-android-studio">Android Studio Installation</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#installation-web">Build Instructions for the Web Server Application</a>
+        <ol>
+          <li><a href="#installation-web-dependencies">Installing Dependencies</a></li>
+        </ol>
+      </li>
+      <li><a href="#installation-jenkins">Build Instructions for the Jenkins Server Application</a></li>
+    </ol>
+  </li>
+  <li>
+    <a href="#usage">Usage</a>
+    <ol>
+      <li><a href="#usage-jenkins">Running the Jenkins Server Application</a></li>
+      <li><a href="#usage-web">Running the Web Server Application</a></li>
+      <li>
+        <a href="#usage-android">Running the Android Application</a>
+        <ol>
+          <li><a href="#usage-android-classify">Using Classify to Identify Leaves</a></li>
+          <li><a href="#usage-android-capture">Using Capture to Expand the Recognition of Images</a></li>
+          <li><a href="#usage-android-update">Check for Model Updates</a></li>
+        </ol>
+      </li>
+    </ol>
+  </li>
+  <li>
+    <a href="#troubleshoot">Troubleshoot</a>
+  </li>
+  <li>
+    <a href="#glossary">Glossary</a>
+  </li>
+</ol>
+
+<h2 class="text-center" id="installation">Installation</h2>
+
+<h3 id="installation-requirements">Requirements</h3>
+<p>
+  To build and run the project, a Debian-based Linux operating system, such as Ubuntu 16.04, is needed. To install the Android application, the device needs to be running Android 6.0 or higher.
+</p>
+
+<h3 id="installation-dependencies">Dependencies</h3>
+<p>
+  The following software packages are needed for building the project:
+  <ul>
+    <li><a href="https://developer.android.com/studio/index.html">Android Studio</a></li>
+    <li><a href="https://developer.android.com/ndk/downloads/older_releases.html">Android NDK Rev. 12b</a></li>
+    <li><a href="https://bazel.build/">Bazel 0.4.4</a></li>
+    <li><a href="http://flask.pocoo.org/">Flask</a></li>
+    <li><a href="http://gunicorn.org/">Gunicorn</a></li>
+    <li><a href="http://openjdk.java.net/projects/jdk8/">OpenJDK 8</a></li>
+    <li><a href="https://www.python.org/">Python 2.6</a></li>
+    <li><a href="https://virtualenv.pypa.io/en/stable/">Virtualenv</a></li>
+  </ul>
+</p>
+
+<h3 id="installation-android">Build Instructions for the eLeaf Android Application</h3>
+
+<h4 id="installation-android-bazel">Bazel Installation</h4>
+<p>
+  Bazel 0.4.4 requires OpenJDK 8 to be installed. To install, run the following command:
+</p>
+<pre>
+sudo apt-get install openjdk-8-jdk
+</pre>
+<p>
+  Bazel 0.4.4 also requires additional packages that can be installed using the following command:
+</p>
+<pre>
+sudo apt-get install pkg-config zip g++ zlib1g-dev unzip
+</pre>
+<p>
+  Download the Bazel 0.4.4 Debian package at the following URL: <a href="https://github.com/bazelbuild/bazel/releases/download/0.4.4/bazel_0.4.4-linux-x86_64.deb">https://github.com/bazelbuild/bazel/releases/download/0.4.4/bazel_0.4.4-linux-x86_64.deb</a>
+Once the Debian package has been downloaded, you can install the package using the default software package manager of your operating system, or run the following command on the Debian package:
+</p>
+<pre>
+sudo dpkg -i bazel_0.4.4-linux-x86_64.deb
+sudo apt-install -f
+</pre>
+
+<h4 id="installation-android-studio">Android Studio Installation</h4>
+<p>
+  If you are running a 64-bit version of Linux, install the following 32-bit libraries:
+</p>
+<pre>
+sudo apt-get install libc6:i386 libncurses5:i386 libstdc++6:i386 lib32z1 libbz2-1.0:i386
+</pre>
+<p>
+  Download Android Studio at the following URL: <a href="https://developer.android.com/studio/index.html">https://developer.android.com/studio/index.html</a>
+Once the .zip file has finished downloading, extract the contents to the <code>/usr/local/</code> directory with the following command:
+</p>
+<pre>
+sudo unzip android-studio-ide*.zip -d /usr/local
+</pre>
+<p>
+  To launch Android Studio perform the following command:
+</p>
+<pre>
+sh /usr/local/android-studio/bin/studio.sh
+</pre>
+<p>
+  Once Android Studio launches, it will ask if you want to import settings from a previous Android Studio installation. If you do have a previous Android Studio installation, the choice is up to you. Select <strong>OK</strong>. The setup wizard will guide you through the installation of Android Studio. Once the installation finishes, you will see the following window:
+</p>
+<img src="/images/screenshots/Android_Studio_Welcome_Screen.png" class="img-responsive center-block" alt="Android Welcome Screen" />
+<p>
+  On this window, click on <strong>Configure</strong> at the bottom right corner, and then select <strong>SDK Manager</strong> from the list.
+</p>
+<img src="/images/screenshots/Android_Studio_Welcome_Screen_SDK_Manager.png" class="img-responsive center-block" alt="Android Welcome Screen Configure Menu" />
+<p>
+  The SDK Manager window will open up. Select the <strong>Android 6.0 (Marshmallow)</strong> package from the <strong>SDK Platforms</strong> tab.
+</p>
+<img src="/images/screenshots/Android_Studio_Android_SDK.png" class="img-responsive center-block" alt="Android Studio Android SDK Screen" />
+<p>
+  Next, select the <strong>SDK Tools</strong> tab and select the <strong>NDK</strong> package. Once the packages are selected click on <strong>Apply</strong> and then <strong>OK</strong> in the confirmation window to download and install the packages.
+</p>
+<img src="/images/screenshots/Android_Studio_SDK_Tools.png" class="img-responsive center-block" alt="Android Studio Android SDK Tools Screen" />
+<p>
+  A separate window should open for downloading the packages. Once the installation is finished, select the <strnog>Finish</strnog> button.
+</p>
+<img src="/images/screenshots/Android_Studio_SDK_Quickfix_Installation.png" class="img-responsive center-block" alt="Android Studio Android SDK Installation Screen" />
+<p>
+  Before opening the project in Android Studio, two files need to be created. The first file is the <code>WORKSPACE</code> file in the root directory of the project. There is an existing file named <code>WORKSPACE_TEMPLATE</code> that contains instructions on how the <code>WORKSPACE</code> file should look like. In the <code>WORKSPACE_TEMPLATE</code> file, modify the path variable of the <code>android_sdk_repository</code> object to point to the path of the Android SDK files. This path is usually located in the <code>~/Android/Sdk/</code> directory. The next path variable to be modified is the <code>android_ndk_repository</code> object path. The NDK is usually located in the <code>~/Android/Sdk/ndk-bundle/</code> directory. Once the appropriate paths have been added, save the file with the name <code>WORKSPACE</code>.
+</p>
+<p>
+  The second file is located in the project directory under the  <code>/tensorflow/examples/android/</code> directory. The file is called <code>build.gradle</code>. This file requires the location of the Bazel installation. Typically, the location of the Bazel package is in <code>/usr/bin/bazel/</code> directory. Once the correct value has been added, save and close the file.
+</p>
+<p>
+  Now on the Welcome screen, select <strong>Open an existing Android project</strong>. Navigate to the project folder. Once inside the project folder, navigate to the <code>tensorflow/examples/android/</code> directory to open the project. When the project finishes loading, select <strong>Build > Make Project</strong> to build the project. Once that finishes, select <strong>Build > Build APK</strong> to create the APK file to install the Android application on the Android device. The APK file is outputted inside the project folder in the <code>tensorflow/examples/android/gradleBuild/outputs/apk/</code> directory.
+</p>
+<img src="/images/screenshots/Android_Studio_Build_Menu.png" class="img-responsive center-block" alt="Android Studio Build Menu" />
+<p>
+  Copy the APK file from that folder to the Android device. Run the APK file on the Android device to install the application. Run the application by finding the application named <strong>eLeaf</strong> with the eLeaf logo.
+</p>
+
+<h3 id="installation-web">Build Instructions for the Web Server Application</h3>
+
+<h4 id="installation-web-dependencies">Installing Dependencies</h4>
+<p>
+  Python should be installed on the system by default, but if it is not, you can install it with the following command.
+</p>
+<pre>
+sudo apt-get install python python3
+</pre>
+<p>
+  Once Python is installed, ensure that pip and setuptools are installed as well.
+</p>
+<pre>
+sudo pip install -U pip setuptools
+</pre>
+<p>
+  Next, install virtualenv:
+</p>
+<pre>
+sudo pip install virtualenv
+</pre>
+<p>
+  Once virtualenv is installed, activate it in the project root by running:
+</p>
+<pre>
+. venv/bin/activate
+</pre>
+<p>
+  <strong>Note:</strong> you can deactivate the virtual environment by running:
+</p>
+<pre>
+deactivate
+</pre>
+<p>
+  With the virtual environment activated, ensure that Flask and Gunicorn are installed by running the following commands:
+</p>
+<pre>
+sudo pip install Flask
+sudo pip install gunicorn
+</pre>
+
+<h3 id="installation-jenkins">Build Instructions for the Jenkins Server Application</h3>
+<p>
+  If you have not installed the Java JDK in the Bazel portion of the document install the Java JDK.
+</p>
+<pre>
+sudo apt-get install openjdk-8-jdk
+</pre>
+<p>
+  Download and unzip the .jenkins folder into the home directory of your Ubuntu environment included with our software package (not the repository as this was too large to add to the repository).
+</p>
+<pre>
+tar -xvzf jenkins_config.tar.gz jenkins
+mv jenkins ~/.jenkins
+</pre>
+<p>
+  Jenkins is now ready to run.
+</p>
+
+<h2 class="text-center" id="usage">Usage</h2>
+<p>
+  To successfully run the Android application, the web server and the Jenkins server need to be running. The web server allows the Android application to check for Tensorflow model updates and to upload user images to the server. The Jenkins server allows new models to be automatically trained at scheduled intervals for the Android application to use.
+</p>
+
+<h3 id="usage-jenkins">Running the Jenkins Server Application</h3>
+<p>
+  Running the jenkins server is quite simple. Put the jenkins.war file (included with our USB resources) anywhere you’d like on your Ubuntu system.
+</p>
+<p>
+  Go to the directory in which you saved the jenkins.war file and start jenkins by running the following command.
+</p>
+<pre>
+java -jar jenkins.war --httpPort=22334
+</pre>
+<p>
+  The server can be accessed through the local ip of the device or using the localhost on the machine itself.
+</p>
+<pre>
+http://localhost:22334
+</pre>
+<p>
+  The server is already configured to run periodically at midnight on weekdays. To run a build manually go to the jenkins server’s main page and login using:
+</p>
+<pre>
+User: eLeaf
+Pass: eLeaf
+</pre>
+<p>
+  Click on the <strong>eLeaf-ecosystem</strong> item on the center of the page.
+</p>
+<img src="" class="img-responsive center-block" alt="Jenkins Main Page" />
+<p>
+  Then click the <strong>Build Now</strong> option on the left hand side of the page.
+</p>
+<img src="" class="img-responsive center-block" alt="Jenkins eLeaf Project Page" />
+<p>
+  You can now click the running build in the bottom left corner denoted by the flashing LED and loading bar.
+</p>
+<img src="" class="img-responsive center-block" alt="Jenkins eLeaf Project Page LED" />
+<p>
+  Click <strong>Console Output</strong> in the left panel to view the current build progress.
+</p>
+<img src="" class="img-responsive center-block" alt="Jenkins eLeaf Project Build Page" />
+<p>
+  You can then see any errors that come up or the successes in validation.
+</p>
+<img src="" class="img-responsive center-block" alt="Jenkins eLeaf Project Console Output" />
+
+<h3 id="usage-web">Running the Web Server Application</h3>
+<p>
+  To run the web server, execute the following commands in the root of the project directory:
+</p>
+<pre>
+. venv/bin/activate
+sudo gunicorn -w &lt;number-of-threads&gt; -b &lt;host:port&gt; web_server:APP
+</pre>
+<p>
+  For the second command the <code>&lt;number-of-threads&gt;</code> variable is an integer specifying how many worker threads to create to handle requests. A default value that can be used for this variable is <code>4</code>. The second variable, <code>&lt;host:port&gt;</code>, defines host and port that the web server should listen from.
+</p>
+
+<h3 id="usage-android">Running the Android Application</h3>
+<p>
+  Before running the Android application, ensure that the Web server and Jenkins server are running either in the local network or on the Internet. Then, in the <code>MainActivity.java</code> file, change the <code>private static String serverUrl</code> variable to reflect the same host and port of the web server application. This is to ensure that the application is able to interact with the web server for uploading images and checking for updates. Once the correct host and port have been set, rebuild the application and install the APK file on the Android device.
+</p>
+<p>
+  To run the Android application, find the app on the Android device. It is titled <strong>eLeaf</strong>. When the application boots up, the main screen will display as below.
+</p>
+<img src="/images/screenshots/Main_Activity.png" class="img-responsive center-block" alt="eLeaf Main Screen" />
+<p>
+  The <strong>Instructions</strong> item displays text describing how to use the application. The <strong>Classify</strong> item allows the user to snap a picture of a leaf to identify. The <strong>Capture</strong> item allows the user to take a picture of a leaf to upload to the server so that the image can be used to train new models.
+</p>
+
+<h4 id="usage-android-classify">Using Classify to Identify Leaves</h4>
+<p>
+  To identify the species of a leaf, select <strong>Classify</strong> from the main menu. The app will utilize the device’s camera to capture an image. The following screen should display:
+</p>
+<img src="/images/screenshots/Classify_Activity.png" class="img-responsive center-block" alt="eLeaf Classify Screen" />
+<p>
+  In the top right corner of the screen, you can press the <strong>Choose Your Region</strong> button to change to model to recognize plants in the correct region. Currently, there are four choices for the United States. Once the correct region is selected, press the camera button on the bottom to capture an image of the leaf. For best results, the leaf should be against a white background. The results of the search should display in the top left corner of the screen on the white bar at the top.
+</p>
+
+<h4 id="usage-android-capture">Using Capture to Expand the Recognition of Images</h4>
+<p>
+  To teach the app to learn new images, select <strong>Capture</strong> from the main menu. The camera should display what it is seeing on the screen. At the bottom there is a <strong>Capture</strong> button.
+</p>
+<img src="/images/screenshots/Capture_Activity.png" class="img-responsive center-block" alt="eLeaf Capture Screen" />
+<p>
+  Press <strong>Capture</strong> to take a picture of the object that you want to add to the model. The next window should prompt you to type a name for the object in the picture. Once the proper name has been entered, select <strong>Upload Photo</strong>. The app will communicate with the eLeaf web server to store the image on the server. The Jenkins server will eventually build the new model at the scheduled time.
+</p>
+
+<h4 id="usage-android-update">Check for Model Updates</h4>
+<p>
+  On the main menu, select the three vertical dots on the top right corner of the screen. This will open a menu containing two items, <strong>Check For Updates</strong> and <strong>About</strong>. Selecting <strong>Check For Updates</strong> will make the app communicate with the web server to see if there is a new version of the models available. If there is a new version of the model, a small button will appear on the main menu that will direct the user to download the new version of the APK that contains the model updates. If there is not a new version of the model, it will simply say a message at the bottom that there is not. The <strong>About</strong> menu item will simply display some information about the applications and the authors.
+</p>
+
+<h2 class="text-center" id="troubleshoot">Troubleshoot</h2>
+<h3>The Android application fails to build.</h3>
+<p>
+  Ensure that the paths for Bazel, Android SDK, and Android NDK are correct in the WORKSPACE and build.gradle files. To review the instructions for these files, go to the <a href="#installation-android">Build Instructions for the eLeaf Android Application</a> section.
+</p>
+<h3>The images are not uploaded to the server.</h3>
+<p>
+  Check that the server URL string contains the correct URL for the web server before building the Android application. Also ensure that the web server is running and that the correct permissions are set for the folders to allow the database folder to be written to. Lastly, ensure that the Android device is connected to the same network as the web server.
+</p>
+<h3>The leaf is not properly identified.</h3>
+<p>
+  Ensure that the leaf is placed against a white background, such as on top of a piece of paper, for best results. Also ensure that there is proper lighting on the leaves. If the leaf is still not recognized, then most likely the model has not been trained on that species. If this is the case, you can use the <strong>Capture</strong> option of the app to upload images of the leaf to the web server if you know the species of the leaf.
+</p>
+
+<h2 class="text-center" id="glossary">Glossary</h2>
+<p>
+  <strong>Android NDK</strong> - The Android Native Development Kit (NDK) is a toolset that allow parts of the Android application to be implemented using native-code languages like C and C++.
+</p>
+<p>
+  <strong>Android SDK</strong> - The Android Software Development Kit (SDK) is a set of libraries that facilitate the development of software for the Android operating system.
+</p>
+<p>
+  <strong>Android Studio</strong> - Android Studio is the integrated development environment (IDE) provided by Google to facilitate the development of software for the Android operating system.
+</p>
+<p>
+  <strong>Android Marshmallow</strong> - The Marshmallow version of the Android operating system is the 6th version of Android. Marshmallow is required for the eLeaf application to work properly.
+</p>
+<p>
+  <strong>Application</strong> - An application is a set of hardware instructions that run on a device to perform a task.
+</p>
+<p>
+  <strong>Bazel</strong> - Bazel is a build tool provided by Google that contains built-in support for building client and server software for both Android and iOS platforms.
+</p>
+<p>
+  <strong>Classify</strong> - Classify is the process of running the captured image through the model to identify what classification the image falls under. This process is what determines what species a leaf is when using the eLeaf app.
+</p>
+<p>
+  <strong>Debian</strong> - Debian is a flavor of the Linux operating system that is free. Some notable operating systems that are Debian-based are Ubuntu, Linux Mint, SteamOS, and TAILS.
+</p>
+<p>
+  <strong>Django</strong> - Django is a high-level Python framework for web applications.
+</p>
+<p>
+  <strong>eLeaf</strong> - eLeaf is the horticulture classification application that we have developed for taxonomists and taxonomy enthusiasts to use.
+</p>
+<p>
+  <strong>Flask</strong> - Flask is a WSGI microframework for Python that is based on Werkzeug and Jinja2 for web applications.
+</p>
+<p>
+  <strong>Gunicorn</strong> - Gunicorn is a Python WSGI HTTP Server.
+</p>
+<p>
+  <strong>Host</strong> - A host describes the computer that is hosting a service.
+</p>
+<p>
+  <strong>Java SE</strong> - Java Platform, Standard Edition is a computing platform for development and deployment of portable code for desktop and server environments.
+</p>
+<p>
+  <strong>Jenkins</strong> - Jenkins is an open source automation server that allows projects to be built, deployed, and automated.
+</p>
+<p>
+  <strong>Jinja2</strong> - Jinja2 is a templating language for Python based on Django templates.
+</p>
+<p>
+  <strong>Linux</strong> - Linux is a Unix-like operating system for various types of devices that is open-source.
+</p>
+<p>
+  <strong>Model</strong> - The model describes the file created by Tensorflow after it has trained on a data set. The Model is used by the eLeaf application to classify images.
+</p>
+<p>
+  <strong>OpenJDK</strong> - Open Java Development Kit (JDK) is an open source implementation of Java SE.
+</p>
+<p>
+  <strong>Port</strong> - A port is an endpoint of communication in an operating system that identifies a specific process or a type of network service.
+</p>
+<p>
+  <strong>Python</strong> - Python is an interpreted, object-oriented, high-level programming language with dynamic semantics.
+</p>
+<p>
+  <strong>String</strong> - A string is a programming data structure that stores an parray of characters.
+</p>
+<p>
+  <strong>Templates</strong> - A template is a file containing the basic structure for something else, like a document or a web page.
+</p>
+<p>
+  <strong>Tensorflow</strong>- TensorFlow is an open source software library for machine learning tasks like building and training neural networks.
+</p>
+<p>
+  <strong>Threads</strong> - A thread is a sequence of programmed instructions from a larger program that is executed by the operating system.
+</p>
+<p>
+  <strong>Ubuntu</strong> - Ubuntu is a Debian-based Linux operating system that is open source.
+</p>
+<p>
+  <strong>Virtualenv</strong> - Virtualenv is a tool that creates isolated Python environments to prevent conflicts of libraries.
+</p>
+<p>
+  <strong>Werkzeug</strong> - Werkzeug is a WSGI utility for Python.
+</p>
+<p>
+  <strong>WSGI</strong> - Web Server Gateway Interface (WSGI) is a specification for simple and universal interface between web server and web applications or frameworks for Python.
+</p>
+
+
+{% endblock %}
+
+{% block footer %}{{ super() }}{% endblock %}
